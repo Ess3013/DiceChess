@@ -104,6 +104,13 @@ export class Game extends Scene
             .on('pointerdown', () => this.endTurn());
 
         this.infoText = this.add.text(0, 0, "Roll the dice to start!", { font: '24px Arial', color: '#ffff00' }).setOrigin(0.5);
+
+        // Dice Roll Animation Sprite
+        this.diceVisual = this.add.container(0, 0);
+        const diceBg = this.add.rectangle(0, 0, 100, 100, 0xffffff).setStrokeStyle(4, 0x000000);
+        this.diceValText = this.add.text(0, 0, "?", { font: 'bold 48px Arial', color: '#000000' }).setOrigin(0.5);
+        this.diceVisual.add([diceBg, this.diceValText]);
+        this.diceVisual.setDepth(1000).setAlpha(0);
     }
 
     handleResize(gameSize) {
@@ -141,6 +148,14 @@ export class Game extends Scene
 
         // Reposition UI
         this.layoutUI(width, height, isLandscape);
+
+        // Center visual dice on board
+        if (this.diceVisual) {
+            this.diceVisual.setPosition(
+                this.OFFSET_X + (this.BOARD_SIZE * this.TILE_SIZE) / 2,
+                this.OFFSET_Y + (this.BOARD_SIZE * this.TILE_SIZE) / 2
+            );
+        }
     }
 
     drawBoard() {
@@ -214,12 +229,45 @@ export class Game extends Scene
     rollDice() {
         if (this.gameState !== 'ROLL') return;
 
-        this.diceValue = Phaser.Math.Between(1, 6);
-        this.movesLeft = this.diceValue;
-        this.gameState = 'MOVE';
+        this.gameState = 'ANIMATING'; // Prevent double clicking
+        this.rollButton.setAlpha(0.5);
         
-        this.updateUI();
-        this.infoText.setText(`Rolled a ${this.diceValue}! Select pieces to move.`);
+        // Start Animation
+        this.diceVisual.setAlpha(1).setScale(0.5);
+        this.diceVisual.setAngle(0);
+
+        // Roll Animation: Spin and scale up
+        this.tweens.add({
+            targets: this.diceVisual,
+            scale: 1.5,
+            angle: 360,
+            duration: 800,
+            ease: 'Back.easeOut',
+            onUpdate: () => {
+                // Cycle random numbers
+                this.diceValText.setText(Phaser.Math.Between(1, 6));
+            },
+            onComplete: () => {
+                this.time.delayedCall(400, () => {
+                    this.diceValue = Phaser.Math.Between(1, 6);
+                    this.diceValText.setText(this.diceValue);
+                    
+                    // Fade out and finish
+                    this.tweens.add({
+                        targets: this.diceVisual,
+                        alpha: 0,
+                        scale: 2,
+                        duration: 300,
+                        onComplete: () => {
+                            this.movesLeft = this.diceValue;
+                            this.gameState = 'MOVE';
+                            this.updateUI();
+                            this.infoText.setText(`Rolled a ${this.diceValue}! Select pieces to move.`);
+                        }
+                    });
+                });
+            }
+        });
     }
 
     endTurn() {

@@ -117,28 +117,19 @@ export class Game extends Scene
         const width = gameSize.width;
         const height = gameSize.height;
 
-        // Determine orientation and layout
-        const isLandscape = width > height;
-
-        // Calculate Tile Size
-        // We want the board to fit, leaving space for UI
-        let availableBoardSize;
-        if (isLandscape) {
-            availableBoardSize = Math.min(width * 0.6, height * 0.9);
-        } else {
-            availableBoardSize = Math.min(width * 0.9, height * 0.6);
-        }
+        // Force portrait-style layout logic (Board Top, UI Bottom) for better mobile fit
+        // Calculate Tile Size based on width (mostly) and available height
+        // Reserve 25% or min 150px for UI at bottom
+        const uiHeight = Math.max(height * 0.25, 200);
+        const availableBoardHeight = height - uiHeight - 40; // 40px padding
+        
+        const availableBoardSize = Math.min(width * 0.95, availableBoardHeight);
         
         this.TILE_SIZE = Math.floor(availableBoardSize / this.BOARD_SIZE);
         
-        // Calculate Board Offset (Center board in its section)
-        if (isLandscape) {
-            this.OFFSET_X = (width * 0.6 - (this.TILE_SIZE * this.BOARD_SIZE)) / 2; // Left side
-            this.OFFSET_Y = (height - (this.TILE_SIZE * this.BOARD_SIZE)) / 2;
-        } else {
-            this.OFFSET_X = (width - (this.TILE_SIZE * this.BOARD_SIZE)) / 2;
-            this.OFFSET_Y = 50 + (height * 0.6 - (this.TILE_SIZE * this.BOARD_SIZE)) / 2; // Top side
-        }
+        // Center board horizontally, place at top with padding
+        this.OFFSET_X = (width - (this.TILE_SIZE * this.BOARD_SIZE)) / 2;
+        this.OFFSET_Y = 20; // Small top padding
 
         // Redraw Board
         this.drawBoard();
@@ -147,7 +138,7 @@ export class Game extends Scene
         this.updatePiecePositions();
 
         // Reposition UI
-        this.layoutUI(width, height, isLandscape);
+        this.layoutUI(width, height);
 
         // Center visual dice on board
         if (this.diceVisual) {
@@ -158,70 +149,47 @@ export class Game extends Scene
         }
     }
 
-    drawBoard() {
-        this.graphics.clear();
-        this.COLOR_LIGHT = 0xeaddcf;
-        this.COLOR_DARK = 0xaf8a6b;
+    layoutUI(width, height) {
+        // Position UI elements below the board
+        const boardBottom = this.OFFSET_Y + (this.BOARD_SIZE * this.TILE_SIZE);
+        const uiCenterY = boardBottom + (height - boardBottom) / 2;
+        const centerX = width / 2;
         
-        for (let y = 0; y < this.BOARD_SIZE; y++) {
-            for (let x = 0; x < this.BOARD_SIZE; x++) {
-                const color = (x + y) % 2 === 0 ? this.COLOR_LIGHT : this.COLOR_DARK;
-                this.graphics.fillStyle(color, 1);
-                this.graphics.fillRect(
-                    this.OFFSET_X + x * this.TILE_SIZE, 
-                    this.OFFSET_Y + y * this.TILE_SIZE, 
-                    this.TILE_SIZE, 
-                    this.TILE_SIZE
-                );
-            }
-        }
-        
-        // Re-highlight if selected
-        if (this.selectedPiece) {
-            this.highlightSelection();
-        }
-    }
+        // Info Text immediately below board
+        this.infoText.setPosition(centerX, boardBottom + 30);
+        this.infoText.setWordWrapWidth(width * 0.9);
 
-    updatePiecePositions() {
-        const fontSize = Math.floor(this.TILE_SIZE * 0.8);
+        // Stats Row (Turn, Dice, Moves)
+        const statsY = uiCenterY - 40;
+        const spacingX = width < 400 ? width * 0.3 : 150;
+
+        this.turnText.setOrigin(0.5);
+        this.diceText.setOrigin(0.5);
+        this.movesText.setOrigin(0.5);
+
+        this.turnText.setPosition(centerX - spacingX, statsY);
+        this.diceText.setPosition(centerX, statsY);
+        this.movesText.setPosition(centerX + spacingX, statsY);
+
+        // Scale text for small screens
+        const fontSize = Math.min(24, width / 25);
         const font = `${fontSize}px Arial`;
+        this.turnText.setFont(font);
+        this.diceText.setFont(font);
+        this.movesText.setFont(font);
 
-        for (let y = 0; y < this.BOARD_SIZE; y++) {
-            for (let x = 0; x < this.BOARD_SIZE; x++) {
-                const piece = this.board[y][x];
-                if (piece) {
-                    piece.sprite.setFont(font);
-                    piece.sprite.setPosition(
-                        this.OFFSET_X + x * this.TILE_SIZE + this.TILE_SIZE / 2,
-                        this.OFFSET_Y + y * this.TILE_SIZE + this.TILE_SIZE / 2
-                    );
-                }
-            }
-        }
-    }
+        // Buttons Row
+        const btnY = uiCenterY + 40;
+        this.rollButton.setOrigin(0.5);
+        this.passButton.setOrigin(0.5);
 
-    layoutUI(width, height, isLandscape) {
-        let startX, startY;
-
-        if (isLandscape) {
-            startX = width * 0.65;
-            startY = height * 0.2;
-        } else {
-            startX = 20;
-            startY = this.OFFSET_Y + (this.BOARD_SIZE * this.TILE_SIZE) + 40;
-        }
+        this.rollButton.setPosition(centerX - 80, btnY);
+        this.passButton.setPosition(centerX + 80, btnY);
         
-        const spacing = 50;
-        
-        this.turnText.setPosition(startX, startY);
-        this.diceText.setPosition(startX, startY + spacing);
-        this.movesText.setPosition(startX, startY + spacing * 2);
-        
-        this.rollButton.setPosition(startX, startY + spacing * 3.5);
-        this.passButton.setPosition(startX, startY + spacing * 4.8);
-
-        // Info text at top center
-        this.infoText.setPosition(width / 2, 30);
+        // Adjust button style for touch
+        const btnStyle = { font: 'bold 28px Arial', color: '#00ff00', backgroundColor: '#333', padding: { x: 10, y: 5 } };
+        this.rollButton.setStyle(btnStyle);
+        this.passButton.setStyle({ ...btnStyle, color: '#ff0000' });
     }
 
     // --- Gameplay Logic (Kept mostly same, just updating calls) ---

@@ -149,6 +149,48 @@ export class Game extends Scene
         }
     }
 
+    drawBoard() {
+        this.graphics.clear();
+        this.COLOR_LIGHT = 0xeaddcf;
+        this.COLOR_DARK = 0xaf8a6b;
+        
+        for (let y = 0; y < this.BOARD_SIZE; y++) {
+            for (let x = 0; x < this.BOARD_SIZE; x++) {
+                const color = (x + y) % 2 === 0 ? this.COLOR_LIGHT : this.COLOR_DARK;
+                this.graphics.fillStyle(color, 1);
+                this.graphics.fillRect(
+                    this.OFFSET_X + x * this.TILE_SIZE, 
+                    this.OFFSET_Y + y * this.TILE_SIZE, 
+                    this.TILE_SIZE, 
+                    this.TILE_SIZE
+                );
+            }
+        }
+        
+        // Re-highlight if selected
+        if (this.selectedPiece) {
+            this.highlightSelection();
+        }
+    }
+
+    updatePiecePositions() {
+        const fontSize = Math.floor(this.TILE_SIZE * 0.8);
+        const font = `${fontSize}px Arial`;
+
+        for (let y = 0; y < this.BOARD_SIZE; y++) {
+            for (let x = 0; x < this.BOARD_SIZE; x++) {
+                const piece = this.board[y][x];
+                if (piece) {
+                    piece.sprite.setFont(font);
+                    piece.sprite.setPosition(
+                        this.OFFSET_X + x * this.TILE_SIZE + this.TILE_SIZE / 2,
+                        this.OFFSET_Y + y * this.TILE_SIZE + this.TILE_SIZE / 2
+                    );
+                }
+            }
+        }
+    }
+
     layoutUI(width, height) {
         // Position UI elements below the board
         const boardBottom = this.OFFSET_Y + (this.BOARD_SIZE * this.TILE_SIZE);

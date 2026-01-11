@@ -232,26 +232,43 @@ export class Game extends Scene
         this.gameState = 'ANIMATING'; // Prevent double clicking
         this.rollButton.setAlpha(0.5);
         
+        // Determine result immediately
+        this.diceValue = Phaser.Math.Between(1, 6);
+
         // Start Animation
         this.diceVisual.setAlpha(1).setScale(0.5);
         this.diceVisual.setAngle(0);
+        
+        // Create a sequence of numbers to show
+        let rollCount = 0;
+        const maxRolls = 10;
+        const rollEvent = this.time.addEvent({
+            delay: 80,
+            callback: () => {
+                rollCount++;
+                if (rollCount < maxRolls) {
+                    this.diceValText.setText(Phaser.Math.Between(1, 6));
+                } else {
+                    this.diceValText.setText(this.diceValue);
+                    rollEvent.remove();
+                }
+            },
+            loop: true
+        });
 
         // Roll Animation: Spin and scale up
         this.tweens.add({
             targets: this.diceVisual,
             scale: 1.5,
-            angle: 360,
-            duration: 800,
-            ease: 'Back.easeOut',
-            onUpdate: () => {
-                // Cycle random numbers
-                this.diceValText.setText(Phaser.Math.Between(1, 6));
-            },
+            angle: 360 * 2, // Spin twice for more effect
+            duration: maxRolls * 80, // Match the duration of the number cycling
+            ease: 'Cubic.easeOut',
             onComplete: () => {
-                this.time.delayedCall(400, () => {
-                    this.diceValue = Phaser.Math.Between(1, 6);
-                    this.diceValText.setText(this.diceValue);
-                    
+                // Ensure the final value is set (redundancy)
+                this.diceValText.setText(this.diceValue);
+                
+                // Pause briefly to show the result
+                this.time.delayedCall(500, () => {
                     // Fade out and finish
                     this.tweens.add({
                         targets: this.diceVisual,

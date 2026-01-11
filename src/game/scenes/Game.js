@@ -121,11 +121,11 @@ export class Game extends Scene
         // Calculate Tile Size based on width (mostly) and available height
         // Reserve 25% or min 150px for UI at bottom
         const uiHeight = Math.max(height * 0.25, 200);
-        const availableBoardHeight = height - uiHeight - 40; // 40px padding
+        const availableBoardHeight = Math.max(0, height - uiHeight - 40); // 40px padding
         
         const availableBoardSize = Math.min(width * 0.95, availableBoardHeight);
         
-        this.TILE_SIZE = Math.floor(availableBoardSize / this.BOARD_SIZE);
+        this.TILE_SIZE = Math.max(20, Math.floor(availableBoardSize / this.BOARD_SIZE));
         
         // Center board horizontally, place at top with padding
         this.OFFSET_X = (width - (this.TILE_SIZE * this.BOARD_SIZE)) / 2;

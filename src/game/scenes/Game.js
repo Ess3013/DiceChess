@@ -81,7 +81,8 @@ export class Game extends Scene
             x: x,
             y: y,
             sprite: text,
-            hasMoved: false
+            hasMoved: false,
+            movedThisTurn: false
         };
 
         this.board[y][x] = piece;
@@ -224,6 +225,15 @@ export class Game extends Scene
     endTurn() {
         if (this.gameState === 'GAMEOVER') return;
 
+        // Reset movement status for all pieces
+        for (let y = 0; y < this.BOARD_SIZE; y++) {
+            for (let x = 0; x < this.BOARD_SIZE; x++) {
+                if (this.board[y][x]) {
+                    this.board[y][x].movedThisTurn = false;
+                }
+            }
+        }
+
         this.turn = this.turn === 'white' ? 'black' : 'white';
         this.gameState = 'ROLL';
         this.diceValue = 0;
@@ -257,7 +267,8 @@ export class Game extends Scene
 
         const clickedPiece = this.board[y][x];
 
-        if (clickedPiece && clickedPiece.color === this.turn) {
+        // Only select if it's your turn and the piece hasn't moved yet this turn
+        if (clickedPiece && clickedPiece.color === this.turn && !clickedPiece.movedThisTurn) {
             this.selectPiece(x, y);
         }
         else if (this.selectedPiece) {
@@ -411,6 +422,7 @@ export class Game extends Scene
         piece.x = move.x;
         piece.y = move.y;
         piece.hasMoved = true;
+        piece.movedThisTurn = true;
 
         this.tweens.add({
             targets: piece.sprite,

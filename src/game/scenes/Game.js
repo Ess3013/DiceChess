@@ -298,7 +298,7 @@ export class Game extends Scene
     }
 
     endTurn() {
-        if (this.gameState === 'GAMEOVER') return;
+        if (this.gameState !== 'MOVE') return;
 
         // Reset movement status for all pieces
         for (let y = 0; y < this.BOARD_SIZE; y++) {
